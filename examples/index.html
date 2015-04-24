@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" ng-app="mvd.mathjax">
 <head>
     <meta charset="UTF-8">
     <title></title>
@@ -8,11 +8,17 @@
     <section>
         <h1>Mathjax in place!</h1>
     </section>
+    <section>
+      When $a \ne 0$, there are two solutions to \(ax^2 + bx + c = 0\) and they are
+      $$x = {-b \pm \sqrt{b^2-4ac} \over 2a}.$$
+    </section>
 
-    <script src="../src/angular-mathjax-editor.js"></script>
-    <script>
+    <!-- bower:js -->
+    <script src="bower_components/angular/angular.js"></script>
+    <script src="bower_components/angular-sanitize/angular-sanitize.js"></script>
+    <!-- endbower -->
 
-    </script>
+    <script src="/src/angular-mathjax-editor.js"></script>
     <script src="//localhost:35729/livereload.js"></script>
 </body>
 </html>

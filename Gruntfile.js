@@ -26,11 +26,22 @@ module.exports = function (grunt) {
       gruntfile: {
         files: ['Gruntfile.js']
       },
+      bower: {
+        files: ['bower.json'],
+        tasks: ['wiredep']
+      },
+      js: {
+        files: ['<%= yeoman.src %>/{,*/}*.js'],
+        options: {
+          livereload: '<%= connect.options.livereload %>'
+        }
+      },
       livereload: {
         options: {
           livereload: '<%= connect.options.livereload %>'
         },
         files: [
+          '<%= yeoman.src %>/{,**/}*.js',
           '<%= yeoman.app %>/{,**/}*.html',
           '<%= yeoman.app %>/{,**/}*.css'
         ]
@@ -38,6 +49,13 @@ module.exports = function (grunt) {
       component: {
         files: ['{<%= yeoman.src %>,<%= yeoman.test %>}/*.js', 'bower_components/{,*/}*'],
         tasks: ['build']
+      }
+    },
+
+    wiredep: {
+      app: {
+        src: ['<%= yeoman.app %>/index.html'],
+        ignorePath:  /\.\.\//
       }
     },
 
@@ -50,7 +68,19 @@ module.exports = function (grunt) {
       livereload: {
         options: {
           open: 'http://localhost:<%= connect.options.port %>',
-          base: '<%= yeoman.app %>'
+          middleware: function (connect) {
+            return [
+              connect().use(
+                '/bower_components',
+                connect.static('./bower_components')
+              ),
+              connect().use(
+                '/' + yeomanConfig.src,
+                connect.static('./' + yeomanConfig.src)
+              ),
+              connect.static('' + yeomanConfig.app)
+            ];
+          }
         }
       }
     },
@@ -111,7 +141,7 @@ module.exports = function (grunt) {
   ]);
 
   grunt.registerTask('build', [
-    'karma:dist',
+    // 'karma:dist',
     'clean:dist',
     'copy:dist',
     'ngAnnotate:dist',

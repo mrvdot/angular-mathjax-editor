@@ -57,7 +57,7 @@ angular.module('mvd.mathjax', ['ngSanitize'])
 
     return this;
   })
-  .run(function (mathjax) {
+  .run(['mathjax', function (mathjax) {
 
-  })
+  }])
 })(angular);
