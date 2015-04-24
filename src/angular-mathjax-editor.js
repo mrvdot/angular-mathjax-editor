@@ -4,7 +4,10 @@
 angular.module('mvd.mathjax', ['ngSanitize'])
   .provider('mathjax', function () {
     var _initialized = false
-      , _mj
+      , _mj = {
+        ready: false,
+        _onReady: []
+      }
       , _baseUrl = 'https://cdn.mathjax.org/mathjax/latest/MathJax.js?config={$CONFIG}&delayStartupUntil=configured'
       , _config = 'TeX-AMS-MML_HTMLorMML'
       , _opts = {
@@ -14,8 +17,8 @@ angular.module('mvd.mathjax', ['ngSanitize'])
       };
 
     var _configure = function () {
-      _mj.Hub.Config(_opts);
-      _mj.Hub.Configured();
+      _mj.m.Hub.Config(_opts);
+      _mj.m.Hub.Configured();
       _initialized = true;
     };
 
@@ -23,8 +26,15 @@ angular.module('mvd.mathjax', ['ngSanitize'])
       var url = _baseUrl.replace('{$CONFIG}', config);
       w.MathJax = {
         AuthorInit: function () {
-          _mj = w.MathJax;
-          _mj.Hub.Register.StartupHook("Begin Config", _configure);
+          var cbs = _mj._onReady;
+          _mj.m = w.MathJax;
+          _mj.m.Hub.Register.StartupHook("Begin Config", _configure);
+          _mj.m.Hub.Register.StartupHook("End", function () {
+            _mj.ready = true;
+            for (var i = 0, ii = cbs.length; i < ii; i++) {
+              cbs[i]();
+            }
+          });
         }
       }
       var script = document.createElement("script");
@@ -52,10 +62,50 @@ angular.module('mvd.mathjax', ['ngSanitize'])
 
     this.$get = ['$window', '$document', function ($window, $document) {
       loadAndConfigure($window, $document[0], _config, _opts);
-      return {};
+      return _mj;
     }];
 
     return this;
+  })
+  .directive('equationEditor', function (mathjax) {
+    return {
+      template: '<div class="equation-editor">' +
+        '<input type="hidden" value="{{equationText}}" />' +
+        '<div class="equation-display"></div>' +
+      '</div>',
+      replace: true,
+      require: 'ngModel',
+      link: function ($scope, $element, $attrs, ngModel) {
+        var jax;
+
+        var render = function () {
+          $scope.equationText = ngModel.$viewValue;
+          if (!$scope.equationText) {
+            return;
+          };
+          if (!jax) {
+            var jaxs = mathjax.m.Hub.getAllJax($element[0]);
+            if (!jaxs || !jaxs.length) {
+              $element.find('.equation-display').html(ngModel.$viewValue);
+              mathjax.m.Hub.Queue(['Typeset', mathjax.m.Hub, $element[0]]);
+              return;
+            };
+            jax = jaxs[0];
+          };
+          mathjax.m.Hub.Queue(['Text', jax, ngModel.$viewValue]);
+        }
+
+        if (!mathjax.ready) {
+          ngModel.$render = angular.noop;
+          mathjax._onReady.push(function () {
+            render();
+            ngModel.$render = render;
+          });
+        } else {
+          ngModel.$render = render;
+        }
+      }
+    }
   })
   .run(function (mathjax) {
 
